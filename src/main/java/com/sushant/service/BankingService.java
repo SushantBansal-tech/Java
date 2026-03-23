@@ -1,58 +1,69 @@
-package src.main.java.com.sushant.service;
+package com.sushant.service;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BankingService {
 
-    // Stores userId -> balance
+    // Fix: proper logger
+    private static final Logger logger =
+        Logger.getLogger(BankingService.class.getName());
+
     HashMap<String, Double> accounts = new HashMap<>();
 
-    // Bug 1: No null check — NullPointerException risk (CRITICAL)
+    // Fix 1: null check added
     public double getBalance(String userId) {
-        return accounts.get(userId); // crashes if userId doesn't exist
+        if (!accounts.containsKey(userId)) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+        return accounts.get(userId);
     }
 
-    // Bug 2: No synchronization — Race condition in multi-threading (CRITICAL)
-    public void transfer(String fromUser, String toUser, double amount) {
+    // Fix 2: synchronized block for thread safety
+    public synchronized void transfer(String fromUser, String toUser, double amount) {
         double fromBalance = accounts.get(fromUser);
         double toBalance = accounts.get(toUser);
-
         accounts.put(fromUser, fromBalance - amount);
         accounts.put(toUser, toBalance + amount);
     }
 
-    // Bug 3: Negative amount allowed — Business logic bug (MAJOR)
+    // Fix 3: negative amount check
     public void deposit(String userId, double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be positive");
+        }
         double current = accounts.get(userId);
         accounts.put(userId, current + amount);
-        // Nothing stops deposit(-5000) !
     }
 
-    // Bug 4: Integer overflow (CRITICAL)
+    // Fix 4: cast to long before multiplication
     public long calculateInterest(int principal, int rate, int years) {
-        return principal * rate * years; // overflows if numbers are large!
+        return (long) principal * rate * years;
     }
 
-    // Bug 5: Sensitive data exposed in logs (BLOCKER)
+    // Fix 5: never log passwords + use logger
     public void login(String username, String password) {
-        System.out.println("Login attempt: " + username + " password: " + password);
-        // password printed in plain text in logs!
+        logger.info("Login attempt: " + username);
+        // password never logged!
     }
 
-    // Bug 6: Resource never closed (CRITICAL)
-    public void exportReport() throws Exception {
-        java.io.FileWriter fw = new java.io.FileWriter("report.txt");
-        fw.write("Banking Report");
-        // fw.close() never called — file stays locked!
+    // Fix 6: try-with-resources (auto closes file)
+    // Fix 7: specific IOException instead of generic Exception
+    public void exportReport() throws IOException {
+        try (FileWriter fw = new FileWriter("report.txt")) {
+            fw.write("Banking Report");
+        }
     }
 
-    // Bug 7: Catch is too broad — hides real errors (MAJOR)
+    // Fix 8: catch specific exception + use logger
     public void processPayment(String userId, double amount) {
         try {
             deposit(userId, amount);
-        } catch (Exception e) {
-            // Catches EVERYTHING — even OutOfMemoryError!
-            System.out.println("Something went wrong");
+        } catch (IllegalArgumentException e) {
+            logger.log(Level.SEVERE, "Payment processing failed", e);
         }
     }
 }
