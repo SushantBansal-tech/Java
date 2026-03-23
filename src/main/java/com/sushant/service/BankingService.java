@@ -1,4 +1,4 @@
-package com.sushant.service;
+package src.main.java.com.sushant.service;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class BankingService {
     }
 
     // Fix 5: never log passwords + use logger
-    public void login(String username, String password) {
+    public void login(String username) {
         logger.info("Login attempt: " + username);
         // password never logged!
     }

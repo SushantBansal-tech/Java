@@ -1,4 +1,4 @@
-package com.sushant.service;
+package src.main.java.com.sushant.service;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
